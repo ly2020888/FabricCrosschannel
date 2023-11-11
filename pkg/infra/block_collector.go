@@ -15,11 +15,12 @@ import (
 // BlockCollector keeps track of committed blocks on multiple peers.
 // This is used when a block is considered confirmed only when committed
 // on a certain number of peers within network.
+type Registrytype map[uint64]*bitmap.BitMap
 type BlockCollector struct {
 	sync.Mutex
 	thresholdP, totalP int
 	totalTx            int
-	registry           map[uint64]*bitmap.BitMap
+	registry           map[string]Registrytype
 }
 
 // AddressedBlock describe the source of block
@@ -30,7 +31,7 @@ type AddressedBlock struct {
 
 // NewBlockCollector creates a BlockCollector
 func NewBlockCollector(threshold int, total int) (*BlockCollector, error) {
-	registry := make(map[uint64]*bitmap.BitMap)
+	registry := make(map[string]Registrytype)
 	if threshold <= 0 || total <= 0 {
 		return nil, errors.New("threshold and total must be greater than zero")
 	}
@@ -67,14 +68,25 @@ func (bc *BlockCollector) Start(
 // If the number of peers on which this block has been committed has satisfied thresholdP,
 // adds the number to the totalTx.
 func (bc *BlockCollector) commit(block *AddressedBlock, finishCh chan struct{}, totalTx int, now time.Time, printResult bool) {
-	bitMap, ok := bc.registry[block.Number]
+
+	registry, ok := bc.registry[block.ChannelId]
 	if !ok {
 		// The block with Number is received for the first time
-		b, err := bitmap.NewBitMap(bc.totalP)
+		registry = make(Registrytype)
+
+		bc.registry[block.ChannelId] = registry
+	}
+	// fmt.Printf("ShardID:%s\tTime %8.2fs\tBlock %6d\tTx %6d\t \n", block.ChannelId, time.Since(now).Seconds(), block.Number, len(block.FilteredTransactions))
+
+	bitMap, ok := registry[block.Number]
+	if !ok {
+		// The block with Number is received for the first time
+		b, err := bitmap.NewBitMap(32)
 		if err != nil {
 			panic("Can not make new bitmap for BlockCollector" + err.Error())
 		}
-		bc.registry[block.Number] = &b
+
+		registry[block.Number] = &b
 		bitMap = &b
 	}
 	// When the block from Address has been received before, return directly.
@@ -84,12 +96,13 @@ func (bc *BlockCollector) commit(block *AddressedBlock, finishCh chan struct{}, 
 
 	bitMap.Set(block.Address)
 	cnt := bitMap.Count()
+	// fmt.Println(registry)
 
 	// newly committed block just hits threshold
+
 	if cnt == bc.thresholdP {
-		if printResult {
-			fmt.Printf("Time %8.2fs\tBlock %6d\tTx %6d\t \n", time.Since(now).Seconds(), block.Number, len(block.FilteredTransactions))
-		}
+		// fmt.Printf("ShardID:%s\tblock.Address:%d\t cnt%d bc.thresholdP:%d\n", block.ChannelId, block.Address, cnt, bc.thresholdP)
+		fmt.Printf("ShardID:%s\tTime %8.2fs\tBlock %6d\tTx %6d\t \n", block.ChannelId, time.Since(now).Seconds(), block.Number, len(block.FilteredTransactions))
 
 		bc.totalTx += len(block.FilteredTransactions)
 		if bc.totalTx >= totalTx {
@@ -100,6 +113,6 @@ func (bc *BlockCollector) commit(block *AddressedBlock, finishCh chan struct{}, 
 	// TODO issue176
 	if cnt == bc.totalP {
 		// committed on all peers, remove from registry
-		delete(bc.registry, block.Number)
+		delete(bc.registry[block.ChannelId], block.Number)
 	}
 }

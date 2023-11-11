@@ -20,15 +20,27 @@ type Observer struct {
 	logger  *log.Logger
 }
 
-func CreateObservers(ctx context.Context, channel string, nodes []Node, crypto *Crypto, logger *log.Logger) (*Observers, error) {
+func CreateObservers(ctx context.Context, channel string, shardings []string, nodes []Node, crypto *Crypto, logger *log.Logger) (*Observers, error) {
 	var workers []*Observer
-	for i, node := range nodes {
+	counter := 0
+	for _, node := range nodes {
 		worker, err := CreateObserver(ctx, channel, node, crypto, logger)
 		if err != nil {
 			return nil, err
 		}
-		worker.index = i
+		worker.index = counter
+		counter++
 		workers = append(workers, worker)
+		// 添加observer对节点的其他通道的监控
+		for i := 0; i < len(shardings); i++ {
+			worker, err := CreateObserver(ctx, shardings[i], node, crypto, logger)
+			if err != nil {
+				return nil, err
+			}
+			worker.index = counter
+			counter++
+			workers = append(workers, worker)
+		}
 	}
 	return &Observers{workers: workers}, nil
 }
@@ -77,7 +89,7 @@ func (o *Observer) Start(errorCh chan error, blockCh chan<- *AddressedBlock, now
 		}
 
 		fb := r.Type.(*peer.DeliverResponse_FilteredBlock)
-		o.logger.Debugf("receivedTime %8.2fs\tBlock %6d\tTx %6d\t Address %s\n", time.Since(now).Seconds(), fb.FilteredBlock.Number, len(fb.FilteredBlock.FilteredTransactions), o.Address)
+		// fmt.Printf("ShardID:%s\treceivedTime %8.2fs\tBlockID %6d\tTx %6d\t \n", fb.FilteredBlock.ChannelId, time.Since(now).Seconds(), fb.FilteredBlock.Number, len(fb.FilteredBlock.FilteredTransactions))
 
 		blockCh <- &AddressedBlock{fb.FilteredBlock, o.index}
 	}
