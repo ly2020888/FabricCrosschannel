@@ -47,8 +47,6 @@ orderer3: &orderer3
   addr: orderer.example3.com:9050
   tls_ca_cert: ./organizations/ordererOrganizations/example3.com/msp/tlscacerts/tlsca.example3.com-cert.pem
 
-
-
 endorsers:
   - *peer1
 

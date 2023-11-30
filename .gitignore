@@ -5,7 +5,7 @@
 *.so
 *.dylib
 ./tape
-
+organizations
 # Test binary, build with `go test -c`
 *.test
 
