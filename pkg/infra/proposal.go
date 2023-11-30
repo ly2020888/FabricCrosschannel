@@ -18,13 +18,13 @@ func CreateProposal(signer *Crypto, channel, ccname, version string, args ...str
 	for _, arg := range args {
 		argsInByte = append(argsInByte, []byte(arg))
 	}
-
+	// argsInByte = append(argsInByte, []byte(t))
+	//fmt.Println(argsInByte, f, t, []byte("ReadAsset"))
 	spec := &peer.ChaincodeSpec{
 		Type:        peer.ChaincodeSpec_GOLANG,
 		ChaincodeId: &peer.ChaincodeID{Name: ccname, Version: version},
 		Input:       &peer.ChaincodeInput{Args: argsInByte},
 	}
-
 	invocation := &peer.ChaincodeInvocationSpec{ChaincodeSpec: spec}
 
 	creator, err := signer.Serialize()

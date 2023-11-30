@@ -15,6 +15,7 @@ type Config struct {
 	CommitThreshold int      `yaml:"commitThreshold"`
 	Orderer         Node     `yaml:"orderer"`
 	Channel         string   `yaml:"channel"`
+	Shardings       []string 	 `yaml:"shardings"`
 	Chaincode       string   `yaml:"chaincode"`
 	Version         string   `yaml:"version"`
 	Args            []string `yaml:"args"`

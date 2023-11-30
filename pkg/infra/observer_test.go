@@ -73,7 +73,7 @@ var _ = Describe("Observer", func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		observers, err := infra.CreateObservers(ctx, config.Channel, config.Committers, crypto, logger)
+		observers, err := infra.CreateObservers(ctx, config.Channel, config.Shardings, config.Committers, crypto, logger)
 		Expect(err).NotTo(HaveOccurred())
 
 		finishCh := make(chan struct{})
@@ -133,7 +133,7 @@ var _ = Describe("Observer", func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		observers, err := infra.CreateObservers(ctx, config.Channel, config.Committers, crypto, logger)
+		observers, err := infra.CreateObservers(ctx, config.Channel, config.Shardings, config.Committers, crypto, logger)
 		Expect(err).NotTo(HaveOccurred())
 
 		finishCh := make(chan struct{})
